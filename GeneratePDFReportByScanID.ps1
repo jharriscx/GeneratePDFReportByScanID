@@ -5,6 +5,7 @@
 $server = "<<CHANGE ME>>"
 $cxUsername = "<<USER NAME>>"
 $cxPassword = "<<USER PASSWD>>"
+$myFile = "C:\API_Examples\myFile.pdf"
 # -----------------------------
 
 # DO NO CHANGE BELOW THIS LINE PLEASE
@@ -56,6 +57,7 @@ function getReport($reportUri){
     }
     try {
         $response = Invoke-RestMethod -uri "${serverRestEndpoint}${reportUri}" -method get -Headers $headers
+		write-host $serverRestEndpoint
         return $response
     } catch { 
         Write-Host "StatusCode:" $_.Exception.Response.StatusCode.value__
@@ -78,6 +80,22 @@ function getReportStatus($reportStatusUri){
     }
 }
 
+function downloadReport($serverRestEndpoint, $filename, $token){
+   $headers = @{
+        Authorization = $token
+    }
+      
+    try {
+        $response = Invoke-WebRequest -uri "${serverRestEndpoint}" -method get -contenttype 'application/x-www-form-urlencoded' -Headers $headers -OutFile $filename
+    } catch {
+        Write-Host "StatusCode:" $_.Exception.Response.StatusCode.value__
+        Write-Host "StatusDescription:" $_.Exception.Response.StatusDescription
+        throw "Cannot download report"
+    }
+    
+    return $response
+}
+
 $token = getOAuth2Token
 $createReport = generateReport $scanId
 if($createReport){
@@ -97,9 +115,8 @@ if($createReport){
 	Start-Sleep -s 3
     write-host "Report Finished ${reportId} - Scan ${scanId} - Project ${projectName}"
     $report = getReport $reportUri
+	$myPDFReport = downloadReport "${serverRestEndpoint}${reportUri}" $myFile $token
 }else{
     write-host "Error getting Report of Scan ${scanId}"
 }
-
-# write-host $token
 
